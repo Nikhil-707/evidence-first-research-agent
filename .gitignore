@@ -1,0 +1,11 @@
+.env
+.venv/
+venv/
+agentic-research-mcp-v2-venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.streamlit/secrets.toml
+eval/results_*.json
+eval/comparison.md
+eval/comparison.png

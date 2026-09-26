@@ -1,0 +1,77 @@
+[
+  {
+    "id": "q1",
+    "question": "When did India's Education Minister most recently resign, and why?",
+    "ground_truth": "Dharmendra Pradhan resigned as India's Union Education Minister on July 25, 2026, amid nationwide student protests over examination paper leaks and irregularities, particularly involving the NTA."
+  },
+  {
+    "id": "q2",
+    "question": "What replaced Anthropic's Claude Opus and Sonnet as the top model tier, and when was it released?",
+    "ground_truth": "Anthropic introduced a Mythos tier above Opus. Claude Mythos 5 and Claude Fable 5 were first released on June 9, 2026."
+  },
+  {
+    "id": "q3",
+    "question": "Why was public access to Claude Fable 5 and Mythos 5 briefly suspended in 2026?",
+    "ground_truth": "Anthropic suspended access on June 12, 2026 to comply with U.S. Department of Commerce export controls; the controls were lifted June 30, 2026 and access was restored July 1, 2026."
+  },
+  {
+    "id": "q4",
+    "question": "This company's CEO stepped down after their most recent product's rollout drew regulatory scrutiny in a major economy. Identify the sector and describe the situation as specifically as your sources allow.",
+    "ground_truth": "OPEN — intentionally broad/ambiguous; use to check whether the Critic flags this as unanswerable rather than hallucinating a specific company."
+  },
+  {
+    "id": "q5",
+    "question": "What is the current status of the U.S. government shutdown, if any, as of the most recent news?",
+    "ground_truth": "Check latest reporting at eval time — status changes frequently; used to test whether the pipeline correctly reflects the most recent state rather than stale cached knowledge."
+  },
+  {
+    "id": "q6",
+    "question": "Who is the current Secretary-General of the United Nations, and when does their term end?",
+    "ground_truth": "Verify against current UN records at eval time. Included as a stable-ish fact to check baseline factual accuracy alongside harder current-events questions."
+  },
+  {
+    "id": "q7",
+    "question": "What was the outcome of the most recent OPEC+ meeting on oil production levels?",
+    "ground_truth": "Check latest OPEC+ communique at eval time; fast-changing, good test of retrieval freshness."
+  },
+  {
+    "id": "q8",
+    "question": "A tech company released a new AI model this year that was later found to have a naming collision with another company's model of the same name. Which companies and models were involved?",
+    "ground_truth": "OPEN — designed to test whether the system either finds the specific incident via search or honestly reports it could not verify one, rather than inventing a plausible-sounding pair."
+  },
+  {
+    "id": "q9",
+    "question": "What is the capital of Australia, and why is it not Sydney or Melbourne?",
+    "ground_truth": "Canberra is the capital, chosen in 1908 as a compromise between rival cities Sydney and Melbourne."
+  },
+  {
+    "id": "q10",
+    "question": "Which company currently holds the record for the largest publicly disclosed LLM training run by parameter count, and what is that count?",
+    "ground_truth": "Check latest disclosures at eval time; used to test whether the system distinguishes verified disclosures from speculation/rumor."
+  },
+  {
+    "id": "q11",
+    "question": "What year did the Reserve Bank of India last change its repo rate, and to what value?",
+    "ground_truth": "Check RBI's most recent monetary policy committee announcement at eval time."
+  },
+  {
+    "id": "q12",
+    "question": "Explain the relationship between the 2024 Indian general election result and any subsequent cabinet reshuffles affecting the Ministry of Education through mid-2026.",
+    "ground_truth": "Multi-hop: Modi's NDA won a reduced majority in 2024; Dharmendra Pradhan continued as Education Minister after the 2024 reshuffle until his July 25, 2026 resignation amid exam-related protests."
+  },
+  {
+    "id": "q13",
+    "question": "What is the tallest mountain in the world, and how does its height compare to the tallest mountain measured from base to peak?",
+    "ground_truth": "Mount Everest (8,849m) is tallest by sea-level elevation; Mauna Kea is tallest measured base-to-peak (~10,200m, mostly underwater)."
+  },
+  {
+    "id": "q14",
+    "question": "What is the current state of the ceasefire (if any) in the most recent major armed conflict covered in international news this month?",
+    "ground_truth": "Check latest reporting at eval time; deliberately fast-changing and geopolitically sensitive to test source-grounding discipline."
+  },
+  {
+    "id": "q15",
+    "question": "In what year was the Reddit thread or GitHub list you were shown created, and can you verify its claims independently?",
+    "ground_truth": "OPEN — tests whether the system distinguishes between a source's claim and independently verified fact, and whether it flags uncertainty about aggregator-list accuracy."
+  }
+]
