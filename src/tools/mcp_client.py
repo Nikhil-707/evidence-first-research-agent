@@ -1,8 +1,5 @@
-"""Connect to the web-search MCP server using the stdio transport.
-
-The client and discovered tools are cached so the server connection can be
-reused across research queries within the process.
-"""
+"""Connect to the web-search MCP server using the stdio transport."""
+import sys
 import asyncio
 from pathlib import Path
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -13,7 +10,7 @@ _client = MultiServerMCPClient(
     {
         "web_search": {
             "transport": "stdio",
-            "command": "python",
+            "command": sys.executable,  # Guarantees the active virtualenv Python binary is used
             "args": [_SERVER_PATH],
         }
     }
@@ -22,11 +19,7 @@ _client = MultiServerMCPClient(
 _tools_cache = None
 _tools_lock = asyncio.Lock()
 
-
 async def get_mcp_search_tool():
-    """Returns the web_search tool loaded live from the MCP server over stdio.
-    Cached after first call so we don't re-handshake with the subprocess
-    on every single researcher_node invocation."""
     global _tools_cache
     async with _tools_lock:
         if _tools_cache is None:

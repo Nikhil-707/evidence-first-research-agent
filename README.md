@@ -1,125 +1,111 @@
-# Evidence-First Research Agent
+# DevAgent: Autonomous Multi-Provider Research Fleet
 
-A research assistant for questions that require current web information, more than one fact, or a clear trail back to sources. It searches the web, checks whether the retrieved material addresses the question, and drafts an answer with links to the sources it used.
+DevAgent is an evidence-first research assistant built with LangGraph, the Model Context Protocol (MCP), and Streamlit. It plans focused searches, retrieves current web results, checks whether the collected evidence covers the question, and produces a cited report with traceable sources.
 
-The project is designed to make research easier to review, not to replace expert judgment. It is built with LangGraph, a web-search MCP server, and a Streamlit interface. The currently implemented language-model providers are Ollama and Groq.
+The workflow makes research easier to review; it does not guarantee that every claim is correct. Search results are based on retrieved web snippets, so verify original sources before relying on the report for important decisions.
 
----
+## Architecture
 
-## The problem it addresses
-
-Language models can produce fluent answers without showing where the information came from. This is especially limiting when the question concerns recent events, combines several facts, or needs to be checked by another person. Searching manually can be slow, and a single model response may not distinguish supported facts from assumptions.
-
-This agent combines web search with an explicit research workflow. It is most useful when a person needs a sourced first draft or a compact starting point for further investigation.
-
----
-
-## How it works
+The application separates the agent workflow from the web-search process. Provider credentials are resolved at runtime and are not included in the LangGraph state.
 
 ```mermaid
 flowchart TD
-    A[Question] --> B[Planner creates focused search queries]
-    B --> C[Researcher searches the web through an MCP server]
-    C --> D[Critic checks evidence against the question]
-    D -->|Evidence gaps found, up to two retries| C
-    D -->|Continue with available evidence| E[Writer drafts a cited report]
-    E --> F[Report with source links and execution trace]
+    UI[Streamlit interface] --> Init[Initialize query and model settings]
+    Init --> Planner[Planner: create focused search queries]
+    Planner --> Researcher[Researcher: collect web results]
+    Researcher --> Critic{Critic: assess evidence coverage}
+    Critic -->|Gaps found, up to two retries| Researcher
+    Critic -->|Approved or retry limit reached| Writer[Writer: draft cited report]
+    Writer --> Results[Report, sources, and execution trace]
+
+    Researcher <-->|MCP over stdio| Client[MCP client]
+    Client <-->|Subprocess| Server[FastMCP search server]
+    Server --> Search[DuckDuckGo]
+
+    Config[Provider configuration] -.-> Planner
+    Config -.-> Critic
+    Config -.-> Writer
 ```
 
-| Stage | Role |
-|---|---|
-| Planner | Breaks a question into focused search queries. |
-| Researcher | Uses a separate MCP server process to search the web and collect result titles, URLs, and snippets. |
-| Critic | Assesses whether the collected sources address the requested facts and identifies gaps for follow-up searches. |
-| Writer | Produces a report that attaches source identifiers to factual claims; the interface links those identifiers to retrieved URLs. |
+## Agent workflow
 
-The Critic can send the workflow back for up to two additional searches. The system uses search-result snippets rather than independently reading and validating every full web page. Its checks and citations improve traceability, but they do not guarantee that every claim is correct. Review the cited sources for important decisions.
+| Stage | Responsibility |
+|---|---|
+| Planner | Decomposes the question into focused, entity-specific search queries. |
+| Researcher | Calls the MCP search tool and collects result titles, URLs, and snippets with source identifiers such as `[S1]`. |
+| Critic | Checks whether the collected evidence addresses the question and requests follow-up searches when it finds gaps. |
+| Writer | Produces a source-grounded report with links from citations to retrieved sources. |
+
+The Critic can send the workflow back for up to two additional searches. It evaluates the retrieved snippets; it does not independently validate every full web page or guarantee exhaustive coverage.
+
+## Credential handling
+
+API keys entered for a run are kept outside the graph state. `src/config.py` uses a task-local
+`contextvars` value to resolve a session key when the model client is created. This keeps the key
+out of the state object that LangGraph records and serializes. Environment-based provider keys
+can also be configured for local or hosted deployments; protect those secrets and restrict access
+to any deployment that uses them.
 
 ## Model providers
 
-Ollama and Groq are implemented in the current code. Select one with `LLM_PROVIDER` in `.env`. Ollama runs a model through a local Ollama service; Groq sends requests to its hosted API and requires a Groq API key. The app also uses a local Hugging Face sentence-transformer for evaluation embeddings. That embedding model is not a configured chat-model provider.
+The model factory supports Groq, xAI, Google Gemini, OpenAI, Anthropic, Hugging Face endpoints,
+and Ollama. Hosted providers require their corresponding API key; Ollama requires a local Ollama
+service and an available model. Provider integrations and model capabilities can differ, so choose
+a model compatible with the structured outputs and asynchronous calls used by the Planner and
+Critic.
 
-Gemini, OpenAI, Anthropic Claude, and Hugging Face-hosted chat models are not currently enabled. The provider interface in `src/config.py` gives the project a place to add them, but each provider needs its LangChain integration, configuration and credentials, and verification that its model supports the structured output and asynchronous calls used by the Planner and Critic. An API key alone will not make an unimplemented provider work.
-
-Using a hosted model does not remove the purpose of the agent. The provider supplies language-model inference; the application supplies the research workflow: search-tool access, query planning, evidence collection, gap-driven retries, and source-linked output. Provider choice affects cost, latency, privacy, availability, and model behavior, but it does not replace those application-level steps. The agent is not automatically more accurate than a model used directly; its value is a repeatable process that makes sources and evidence gaps easier to inspect.
-
-## When to use it
-
-This tool is a good fit when you need to:
-
-- Gather current public-web information before drafting a briefing, overview, or research note.
-- Explore a question whose answer depends on several related facts.
-- Give colleagues a response they can check through source links.
-- Compare an agent workflow against a single-model baseline using the included benchmark.
-
-It is less suitable when the answer must come from private documents or a controlled database, when the task requires a guaranteed exhaustive search, or when an expert-approved answer is required without human review. The current search tool queries the public web, and the Critic checks returned snippets; it does not authenticate sources, crawl every page, or provide a compliance guarantee. For high-impact decisions, use the report as a research aid and verify the original sources.
+The project also uses a local Hugging Face sentence-transformer for evaluation embeddings. This is separate from the configured chat-model provider.
 
 ## Setup
 
 ### Requirements
 
 - Python 3.10 or newer.
-- Git, if cloning the repository.
-- One configured language-model option: an installed and running Ollama service with a downloaded model, or a Groq API key.
-- An internet connection for web search and package installation.
+- An internet connection for package installation and web search.
+- Credentials for a supported hosted model, or an installed and running Ollama service.
 
-### Get the project
+### Install
 
-On the project's repository page, select **Code**, copy the HTTPS clone URL, and replace `<repository-url>` below:
+Clone the repository and enter its directory:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Nikhil-707/evidence-first-research-agent.git
 cd evidence-first-research-agent
 ```
 
-Alternatively, download and extract the project archive, then open a terminal in the extracted project folder.
-
-### Install dependencies
-
-Create and activate a virtual environment from the project folder:
-
-```bash
-python -m venv .venv
-```
-
-Windows PowerShell:
+Create and activate a virtual environment:
 
 ```powershell
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-macOS or Linux:
+On macOS or Linux, activate it with:
 
 ```bash
 source .venv/bin/activate
 ```
 
-Install the project packages:
+Install dependencies:
 
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-### Choose a language model
+### Configure a provider
 
-Create `.env` from the provided example, then edit the values for one provider:
+Create a local `.env` file in the project root and set the variables for your provider. For example:
 
-```bash
-cp .env.example .env
+```dotenv
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
-In Windows PowerShell, `Copy-Item .env.example .env` performs the same step. Do not share or commit `.env`; it may contain credentials.
+Use the matching settings for other providers, such as `OPENAI_API_KEY` and `OPENAI_MODEL`, `GOOGLE_API_KEY` and `GEMINI_MODEL`, or `OLLAMA_MODEL` and `OLLAMA_BASE_URL`. Do not commit `.env` or share provider credentials. The Streamlit interface can also accept a session key for a research run.
 
-For Groq, set `LLM_PROVIDER=groq`, add your key to `GROQ_API_KEY`, and set `GROQ_MODEL` to a model available to your Groq account. Create or manage keys at [Groq Console](https://console.groq.com/).
-
-For Ollama, install and start Ollama, download a model supported by your Ollama installation, and set `LLM_PROVIDER=ollama` and `OLLAMA_MODEL` to that model's name. The default is `qwen2.5:1.5b`; you can replace it with another model available to Ollama. If Ollama is running somewhere other than the default local address, set `OLLAMA_BASE_URL` accordingly.
-
-The LangSmith variables in `.env.example` are optional tracing settings. Leave tracing disabled or remove those entries if you do not use LangSmith; do not add a LangSmith key unless you have one and intend to send traces to that service.
-
-This repository provides a self-hosted application, not a hosted public service. Once installed and configured, the Streamlit interface can be used without writing code. To make it available to non-technical users without local setup, an administrator must deploy and maintain the application and securely configure its model-provider credentials. Do not ask users to enter provider keys into a shared deployment.
-
-## Run the agent
+## Run the application
 
 Start the Streamlit interface:
 
@@ -127,64 +113,75 @@ Start the Streamlit interface:
 python -m streamlit run app.py
 ```
 
-Open the local URL printed in the terminal, enter a research question, and select **Run Research Pipeline**. The results page shows the report, source links, and an execution trace. For a first check, ask a question about a recent public event and open the cited sources to compare them with the answer.
+Open the local URL printed in the terminal, enter a research question, and run the pipeline. The results include the report, source links, retrieved snippets, and execution trace.
 
-The project also exposes an optional FastAPI endpoint:
+## Optional REST API
+
+Start the FastAPI service:
 
 ```bash
 python main.py
 ```
 
-Once it starts, submit a JSON request to `http://127.0.0.1:8000/api/research`, for example:
+Submit a research request to `http://127.0.0.1:8000/api/research`:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/research \
-    -H "Content-Type: application/json" \
-    -d '{"query":"What are the latest public updates on the topic?"}'
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the latest public updates on the topic?",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b"
+  }'
 ```
+
+## Deploy with Streamlit Community Cloud
+
+1. Push the repository to GitHub and create an app at [share.streamlit.io](https://share.streamlit.io/).
+2. Select the repository and branch, and set `app.py` as the entry point.
+3. Add required provider settings in the app's Secrets configuration, using the same variable names as in `.env`.
+4. Deploy the app and restrict access appropriately. A provider key configured as an app secret is used by the deployment and may incur usage costs; do not expose a shared deployment with unrestricted access to that credential.
 
 ## Evaluate the workflow
 
-The `eval/` directory contains a 15-question benchmark with answerable, recent, multi-part, and open-ended prompts. After configuring a provider and installing the dependencies, run:
+The `eval/` directory contains a benchmark harness that compares the research pipeline with a single-call model baseline using RAGAS Faithfulness and Answer Correctness metrics:
 
 ```bash
+# Run the agent workflow over the benchmark
 python -m eval.run_eval
+
+# Run the single-call baseline
 python -m eval.run_baseline
+
+# Generate the comparison summary and chart
 python -m eval.compare_results
 ```
 
-The first command runs the agent and scores its outputs with RAGAS. The second runs the same benchmark as single model calls. The third creates `eval/comparison.md` and, when Matplotlib is available, `eval/comparison.png`.
+Evaluation results and comparison artifacts are written to `eval/`. The comparison chart requires Matplotlib.
 
-The evaluation requires model calls, web access, and local embedding-model downloads. Results depend on the selected model, search results, and changing benchmark facts. Treat scores as measurements for this benchmark and configuration, not as a guarantee of performance on other questions. See [eval/README.md](eval/README.md) for details.
-
-## Project structure
+## Repository structure
 
 ```text
-app.py                      Streamlit user interface
-main.py                     FastAPI research endpoint
-mcp_server/
-    search_server.py          MCP server for public web search
-src/
-    config.py                 Language-model and embedding configuration
-    agents/
-        graph.py                Planner, Researcher, Critic, and Writer workflow
-        state.py                Data structures shared by workflow stages
-    tools/
-        mcp_client.py           MCP client for the search server
-
-    benchmark.json            Evaluation questions and reference answers
-    run_eval.py               Agent workflow evaluation
-    run_baseline.py           Single-model comparison evaluation
-    compare_results.py        Comparison table and chart generation
+.
+├── app.py                  # Streamlit frontend
+├── main.py                 # FastAPI REST endpoint
+├── mcp_server/
+│   └── search_server.py    # FastMCP web-search server
+├── src/
+│   ├── config.py           # Model factory and credential handling
+│   ├── agents/
+│   │   ├── graph.py        # Planner, Researcher, Critic, and Writer graph
+│   │   └── state.py        # Agent state definition
+│   └── tools/
+│       └── mcp_client.py   # MCP subprocess client
+├── eval/
+│   ├── benchmark.json      # Research benchmark questions
+│   ├── run_eval.py         # Pipeline evaluation
+│   ├── run_baseline.py     # Single-call baseline evaluation
+│   └── compare_results.py  # Comparison report and chart generation
+└── requirements.txt        # Python dependencies
 ```
 
-## Technology
+## License
 
-LangGraph, LangChain, FastMCP, `langchain-mcp-adapters`, Ollama, Groq, DuckDuckGo Search, Streamlit, FastAPI, RAGAS, and Hugging Face sentence-transformers for local evaluation embeddings.
-
-## Planned extensions
-
-- Add integrations for additional chat-model providers, subject to structured-output support.
-- Add HTTP-based MCP transport for separately hosted search services.
-- Expand the interface to show evidence at the claim level.
-- Add MCP tools for private document collections and other research sources.
+This project is licensed under the MIT License.
