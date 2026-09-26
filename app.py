@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 st.set_page_config(
-    page_title="DevAgent | Autonomous Research Fleet",
+    page_title="Evidence-First Research Agent",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -42,7 +42,7 @@ with st.sidebar:
     st.caption("3. **Critic:** Per-claim verification against cited sources, loops back on gaps")
     st.caption("4. **Writer:** Synthesizes answer with inline source citations")
 
-st.title("⚡ DevAgent: Autonomous Research Fleet")
+st.title("⚡ Evidence-First Research Agent")
 st.caption("Multi-agent research pipeline with source-grounded citations and a self-correcting verification loop — built with LangGraph.")
 
 query = st.text_area(

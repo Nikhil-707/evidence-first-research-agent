@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from src.agents.graph import graph_app
 
-app = FastAPI(title="DevAgent Research API")
+app = FastAPI(title="Evidence-First Research API")
 
 
 def _initial_state(query: str) -> dict:

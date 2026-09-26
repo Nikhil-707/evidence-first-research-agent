@@ -1,4 +1,4 @@
-# Research Agent
+# Evidence-First Research Agent
 
 A research assistant for questions that require current web information, more than one fact, or a clear trail back to sources. It searches the web, checks whether the retrieved material addresses the question, and drafts an answer with links to the sources it used.
 
@@ -69,7 +69,7 @@ On the project's repository page, select **Code**, copy the HTTPS clone URL, and
 
 ```bash
 git clone <repository-url>
-cd agentic-research-mcp-v2
+cd evidence-first-research-agent
 ```
 
 Alternatively, download and extract the project archive, then open a terminal in the extracted project folder.
